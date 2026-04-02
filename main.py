@@ -1,4 +1,4 @@
-import sys
+import sys, json
 
 def verify_number_input(
         m_sString: str,
@@ -34,10 +34,24 @@ def main_menu() -> int:
         m_iSelectedMode = verify_number_input("선택: ", 1, 2)
         if m_iSelectedMode is not None:
             return m_iSelectedMode
+        
+def user_menu() -> None:
+    # TODO: 사용자 입력(3x3) 메뉴 구현
+    return None
+
+def data_menu() -> None:
+    # TODO: data.json 분석 메뉴 구현
+    return None
 
 def main() -> None:
     m_iSelectedMode = main_menu()
-    print(m_iSelectedMode)
+    
+    if m_iSelectedMode == 1:
+        user_menu()
+    elif m_iSelectedMode == 2:
+        data_menu()
+    else:
+        print("알 수 없는 모드입니다. 분명 앞에서 값을 체크했을텐데..?")
 
 if __name__ == "__main__":
     main()
