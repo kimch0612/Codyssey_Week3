@@ -1,1 +1,1 @@
-# Week 3: Mini NPC Simulator 개발
+# Week 3: Mini NPU Simulator 개발
