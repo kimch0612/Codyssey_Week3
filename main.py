@@ -24,11 +24,28 @@ def verify_number_input(
     
     return m_iValue
 
-def parse_row(row_text, size) -> list[int] | None:
-    # TODO: 사용자가 입력한 한 줄 문자열을 숫자 리스트로 바꾸는 함수
-    pass
+def parse_row(row_text, size) -> list[float] | None:
+    m_sText = row_text.strip()
+    if not m_sText:
+        print("텍스트를 입력해주세요.")
+        return None
 
-def read_matrix(size, title) -> list[list[int]] | None:
+    m_lStringValues = m_sText.split()
+    if len(m_lStringValues) != size:
+        print("입력한 값을 다시 확인해주세요.")
+        return None
+    
+    m_fFloatValues = []
+    for str_value in m_lStringValues:
+        try:
+            m_fFloatValues.append(float(str_value))
+        except ValueError:
+            print("숫자만 입력해주세요.")
+            return None
+        
+    return m_fFloatValues
+
+def read_matrix(size, title) -> list[list[float]] | None:
     # TODO: N x N 행렬 하나를 콘솔에서 안전하게 입력받는 함수
     pass
 
