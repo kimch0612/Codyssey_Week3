@@ -45,9 +45,20 @@ def parse_row(row_text, size) -> list[float] | None:
         
     return m_fFloatValues
 
-def read_matrix(size, title) -> list[list[float]] | None:
-    # TODO: N x N 행렬 하나를 콘솔에서 안전하게 입력받는 함수
-    pass
+def read_matrix(size, title) -> list[ list[float] ]:
+    matrix = []
+    print(title)
+
+    for i in range(0, size):
+        while True:
+            row = parse_row(input(), size)
+            if row is None:
+                continue
+            else:
+                matrix.append(row)
+                break
+
+    return matrix
 
 def validate_matrix(matrix, size) -> bool:
     # TODO: 입력받은 행렬이 올바른지 검증하는 함수
