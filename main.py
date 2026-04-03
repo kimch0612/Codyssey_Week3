@@ -23,6 +23,54 @@ def verify_number_input(
         return None
     
     return m_iValue
+
+def parse_row() -> list[int] | None:
+    # TODO: 사용자가 입력한 한 줄 문자열을 숫자 리스트로 바꾸는 함수
+    pass
+
+def read_matrix(size, title) -> list[list[int]] | None:
+    # TODO: N x N 행렬 하나를 콘솔에서 안전하게 입력받는 함수
+    pass
+
+def validate_matrix(matrix, size) -> bool:
+    # TODO: 입력받은 행렬이 올바른지 검증하는 함수
+    pass
+
+def calc_mac(pattern, matrix) -> int:
+    # TODO: MAC 연산 후 점수 계산
+    pass
+
+def decide_label(
+        score_corss, 
+        score_x, 
+        epsilon = 1e-9
+) -> str:
+    # TODO: 두 점수 비교 후 최종 판정
+    pass
+
+def normalize_label(raw_label) -> str:
+    # TODO: 입력 라벨을 내부 표준 라벨로 통일
+    pass
+
+def extract_size_from_pattern_key(key) -> int | None:
+    # TODO: size_5_1 같은 키에서 크기 5를 뽑는 함수
+    pass
+
+def measure_mac_time(
+        pattern, 
+        filter_matrix, 
+        repeat=10
+) -> float:
+    # TODO: MAC 연산의 평균 시간 측정
+    pass
+
+def compare_with_expected(predicted, expected) -> bool:
+    # TODO: 판정 결과와 정답 비교해서 PASS/FAIL 결정
+    pass
+
+def summarize_results(results) -> None:
+    # TODO: 전체 테스트 요약
+    pass
     
 def main_menu() -> int:
     print("=== Mini NPU Simulator ===\n")
