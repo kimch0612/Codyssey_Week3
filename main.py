@@ -24,7 +24,7 @@ def verify_number_input(
     
     return m_iValue
 
-def parse_row() -> list[int] | None:
+def parse_row(row_text, size) -> list[int] | None:
     # TODO: 사용자가 입력한 한 줄 문자열을 숫자 리스트로 바꾸는 함수
     pass
 
@@ -36,19 +36,19 @@ def validate_matrix(matrix, size) -> bool:
     # TODO: 입력받은 행렬이 올바른지 검증하는 함수
     pass
 
-def calc_mac(pattern, matrix) -> int:
+def calc_mac(pattern, matrix) -> float:
     # TODO: MAC 연산 후 점수 계산
     pass
 
 def decide_label(
-        score_corss, 
+        score_cross, 
         score_x, 
         epsilon = 1e-9
 ) -> str:
     # TODO: 두 점수 비교 후 최종 판정
     pass
 
-def normalize_label(raw_label) -> str:
+def normalize_label(raw_label) -> str | None:
     # TODO: 입력 라벨을 내부 표준 라벨로 통일
     pass
 
