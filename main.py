@@ -199,11 +199,6 @@ def main_menu() -> int:
         if m_iSelectedMode is not None:
             return m_iSelectedMode
         
-def user_input_menu() -> None:
-    print("#--------------")
-    print("# [1] 필터 입력")
-    print("#--------------")
-        
 def user_menu() -> None:
     # TODO: 사용자 입력(3x3) 메뉴 구현
     return None
