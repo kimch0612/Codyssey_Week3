@@ -103,8 +103,19 @@ def decide_label(
         return "X"
 
 def normalize_label(raw_label) -> str | None:
-    # TODO: 입력 라벨을 내부 표준 라벨로 통일
-    pass
+    if raw_label is None:
+        print("값이 비었습니다.")
+        return None
+    elif not isinstance(raw_label, str):
+        print("기대한 값과 다른 타입이 들어왔습니다.")
+        return None
+
+    label = raw_label.strip().lower()
+    if label in ["+", "cross"]: return "Cross"
+    if label in ["x"]: return "X"
+
+    print("식별할 수 없는 값입니다.")
+    return None
 
 def extract_size_from_pattern_key(key) -> int | None:
     # TODO: size_5_1 같은 키에서 크기 5를 뽑는 함수
