@@ -61,8 +61,24 @@ def read_matrix(size, title) -> list[ list[float] ]:
     return matrix
 
 def validate_matrix(matrix, size) -> bool:
-    # TODO: 입력받은 행렬이 올바른지 검증하는 함수
-    pass
+    if matrix is None:
+        print("matrix 정보가 이상합니다. 분명 앞에서 확인했을텐데.."); return False
+    elif not (isinstance(matrix, list)):
+        print("matrix가 list 타입이 아닙니다. 분명 앞에서 확인했을텐데.."); return False
+    elif len(matrix) != size:
+        print("matrix 행 개수가 기대한 값과 다릅니다."); return False
+    
+    for row in matrix:
+        if not isinstance(row, list):
+            print("matrix의 행이 list 타입이 아닙니다."); return False
+        elif len(row) != size:
+            print("matrix 열 개수가 기대한 값과 다릅니다."); return False
+        
+        for value in row:
+            if (value is None) or (not isinstance(value, (int, float))):
+                print("matrix의 값이 숫자가 아닙니다."); return False
+            
+    return True
 
 def calc_mac(pattern, matrix) -> float:
     # TODO: MAC 연산 후 점수 계산
