@@ -187,6 +187,70 @@ def summarize_results(results) -> None:
             if not result["passed"]:
                 print(f"- {result['description']} (예상: {result['expected']}, 실제: {result['predicted']})")
 
+def read_valid_matrix(m_iSize: int, m_sTitle: str, m_sName: str) -> list[list[float]]:
+    while True:
+        try:
+            matrix = read_matrix(m_iSize, m_sTitle)
+        except (KeyboardInterrupt, InterruptedError, EOFError):
+            print("\n입력이 중단되었습니다.")
+            sys.exit()
+
+        if validate_matrix(matrix, m_iSize):
+            print(f"{m_sName} 저장 완료")
+            return matrix
+
+        print(f"입력 형식 오류: 각 줄에 {m_iSize}개의 숫자를 공백으로 구분해 입력하세요.")
+        print("처음부터 다시 입력해주세요.")
+
+def make_result(m_sDescription, m_sExpected, m_sPredicted, m_bPassed, m_sReason):
+    return {
+        "description": m_sDescription,
+        "expected": m_sExpected,
+        "predicted": m_sPredicted,
+        "passed": m_bPassed,
+        "reason": m_sReason
+    }
+
+def add_failure_result(m_lResults, m_sPatternKey, m_sExpected, m_sPredicted, m_sReason) -> None:
+    print(f"--- {m_sPatternKey} ---")
+    print(f"판정: {m_sPredicted} | expected: {m_sExpected} | FAIL ({m_sReason})")
+    print()
+    m_lResults.append(make_result(
+        m_sPatternKey,
+        m_sExpected,
+        m_sPredicted,
+        False,
+        m_sReason
+    ))
+
+def generate_cross_matrix(m_iSize):
+    matrix = []
+    m_iCenter = m_iSize // 2
+
+    for i in range(m_iSize):
+        row = []
+        for j in range(m_iSize):
+            if (i == m_iCenter) or (j == m_iCenter):
+                row.append(1.0)
+            else:
+                row.append(0.0)
+        matrix.append(row)
+
+    return matrix
+
+def sort_pattern_key(key):
+    if not isinstance(key, str):
+        return (999999, 999999, str(key))
+
+    parts = key.split("_")
+    if len(parts) == 3 and parts[0] == "size":
+        try:
+            return (int(parts[1]), int(parts[2]), key)
+        except ValueError:
+            return (999999, 999999, key)
+
+    return (999999, 999999, key)
+
     
 def main_menu() -> int:
     print("=== Mini NPU Simulator ===\n")
@@ -200,13 +264,269 @@ def main_menu() -> int:
             return m_iSelectedMode
         
 def user_menu() -> None:
-    # TODO: 사용자 입력(3x3) 메뉴 구현
-    return None
+    m_iSize = 3
+    m_iRepeat = 10
+    m_fEpsilon = 1e-9
+
+    print("#---------------------------------------")
+    print("# [1] 필터 입력")
+    print("#---------------------------------------")
+    m_lFilterA = read_valid_matrix(m_iSize, "필터 A (3줄 입력, 공백 구분)", "필터 A")
+    print()
+    m_lFilterB = read_valid_matrix(m_iSize, "필터 B (3줄 입력, 공백 구분)", "필터 B")
+
+    print()
+    print("#---------------------------------------")
+    print("# [2] 패턴 입력")
+    print("#---------------------------------------")
+    m_lPattern = read_valid_matrix(m_iSize, "패턴 (3줄 입력, 공백 구분)", "패턴")
+
+    m_fScoreA = calc_mac(m_lPattern, m_lFilterA)
+    m_fScoreB = calc_mac(m_lPattern, m_lFilterB)
+
+    m_fStart = time.perf_counter()
+    for i in range(m_iRepeat):
+        calc_mac(m_lPattern, m_lFilterA)
+        calc_mac(m_lPattern, m_lFilterB)
+    m_fEnd = time.perf_counter()
+    m_fAverageTimeMs = ((m_fEnd - m_fStart) / m_iRepeat) * 1000.0
+
+    if abs(m_fScoreA - m_fScoreB) < m_fEpsilon:
+        m_sDecision = "판정 불가"
+    elif m_fScoreA > m_fScoreB:
+        m_sDecision = "A"
+    else:
+        m_sDecision = "B"
+
+    print()
+    print("#---------------------------------------")
+    print("# [3] MAC 결과")
+    print("#---------------------------------------")
+    print(f"A 점수: {m_fScoreA}")
+    print(f"B 점수: {m_fScoreB}")
+    print(f"연산 시간(평균/{m_iRepeat}회): {m_fAverageTimeMs:.6f} ms")
+
+    if m_sDecision == "판정 불가":
+        print(f"판정: 판정 불가 (|A-B| < {m_fEpsilon})")
+    else:
+        print(f"판정: {m_sDecision}")
+
+    print()
+    print("#---------------------------------------")
+    print("# [4] 성능 분석 (3x3)")
+    print("#---------------------------------------")
+    print("크기       평균 시간(ms)    연산 횟수")
+    print("-------------------------------------")
+    print(f"3x3       {m_fAverageTimeMs:>12.6f}    {m_iSize * m_iSize}")
 
 def data_menu() -> None:
-    # TODO: data.json 분석 메뉴 구현
-    with open("data.json", "r") as file:
-        data = json.load(file)
+    m_iRepeat = 10
+    m_fEpsilon = 1e-9
+    m_dFiltersBySize = {}
+    m_lResults = []
+
+    try:
+        with open("data.json", "r", encoding="utf-8") as file:
+            data = json.load(file)
+    except FileNotFoundError:
+        print("data.json 파일을 찾을 수 없습니다.")
+        return
+    except json.JSONDecodeError:
+        print("data.json 형식이 올바르지 않습니다.")
+        return
+
+    if not isinstance(data, dict):
+        print("data.json 최상위 구조 오류: 객체 형태여야 합니다.")
+        return
+
+    m_dRawFilters = data.get("filters")
+    m_dRawPatterns = data.get("patterns")
+
+    if not isinstance(m_dRawFilters, dict):
+        print("data.json 구조 오류: filters 항목이 필요합니다.")
+        return
+
+    if not isinstance(m_dRawPatterns, dict):
+        print("data.json 구조 오류: patterns 항목이 필요합니다.")
+        return
+
+    print("#---------------------------------------")
+    print("# [1] 필터 로드")
+    print("#---------------------------------------")
+    for m_iSize in [5, 13, 25]:
+        m_sSizeKey = f"size_{m_iSize}"
+        m_dRawFilterSet = m_dRawFilters.get(m_sSizeKey)
+
+        if not isinstance(m_dRawFilterSet, dict):
+            print(f"{m_sSizeKey} 필터 FAIL: 필터 묶음이 없거나 형식이 잘못되었습니다.")
+            continue
+
+        m_dNormalizedFilterSet = {}
+        m_lFilterErrors = []
+
+        for m_sRawFilterName, m_lMatrix in m_dRawFilterSet.items():
+            m_sNormalizedLabel = normalize_label(m_sRawFilterName)
+            if m_sNormalizedLabel is None:
+                m_lFilterErrors.append(f"필터 라벨 정규화 실패({m_sRawFilterName})")
+                continue
+
+            if m_sNormalizedLabel in m_dNormalizedFilterSet:
+                m_lFilterErrors.append(f"중복 필터 라벨({m_sNormalizedLabel})")
+                continue
+
+            if not validate_matrix(m_lMatrix, m_iSize):
+                m_lFilterErrors.append(f"{m_sNormalizedLabel} 필터 크기 불일치")
+                continue
+
+            m_dNormalizedFilterSet[m_sNormalizedLabel] = m_lMatrix
+
+        if "Cross" not in m_dNormalizedFilterSet:
+            m_lFilterErrors.append("Cross 필터 누락")
+        if "X" not in m_dNormalizedFilterSet:
+            m_lFilterErrors.append("X 필터 누락")
+
+        if len(m_lFilterErrors) > 0:
+            print(f"{m_sSizeKey} 필터 FAIL: {'; '.join(m_lFilterErrors)}")
+            continue
+
+        m_dFiltersBySize[m_iSize] = m_dNormalizedFilterSet
+        print(f"{m_sSizeKey} 필터 로드 완료 (Cross, X)")
+
+    print()
+    print("#---------------------------------------")
+    print("# [2] 패턴 분석 (라벨 정규화 적용)")
+    print("#---------------------------------------")
+    for m_sPatternKey in sorted(m_dRawPatterns.keys(), key=sort_pattern_key):
+        m_dPatternInfo = m_dRawPatterns[m_sPatternKey]
+
+        if not isinstance(m_dPatternInfo, dict):
+            add_failure_result(m_lResults, m_sPatternKey, "UNKNOWN", "INVALID", "패턴 항목 형식 오류")
+            continue
+
+        m_iSize = extract_size_from_pattern_key(m_sPatternKey)
+        m_sExpected = normalize_label(m_dPatternInfo.get("expected"))
+
+        if m_sExpected is None:
+            add_failure_result(
+                m_lResults,
+                m_sPatternKey,
+                str(m_dPatternInfo.get("expected")),
+                "INVALID",
+                "expected 라벨 정규화 실패"
+            )
+            continue
+
+        if m_iSize is None:
+            add_failure_result(m_lResults, m_sPatternKey, m_sExpected, "INVALID", "패턴 키 형식 오류")
+            continue
+
+        if m_iSize not in m_dFiltersBySize:
+            add_failure_result(
+                m_lResults,
+                m_sPatternKey,
+                m_sExpected,
+                "INVALID",
+                f"size_{m_iSize} 필터를 찾을 수 없습니다."
+            )
+            continue
+
+        if "input" not in m_dPatternInfo:
+            add_failure_result(m_lResults, m_sPatternKey, m_sExpected, "INVALID", "input 필드 누락")
+            continue
+
+        m_lPattern = m_dPatternInfo.get("input")
+        if not validate_matrix(m_lPattern, m_iSize):
+            add_failure_result(
+                m_lResults,
+                m_sPatternKey,
+                m_sExpected,
+                "INVALID",
+                f"입력 패턴 크기 불일치({m_iSize}x{m_iSize} 아님)"
+            )
+            continue
+
+        m_lCrossFilter = m_dFiltersBySize[m_iSize]["Cross"]
+        m_lXFilter = m_dFiltersBySize[m_iSize]["X"]
+
+        m_fCrossScore = calc_mac(m_lPattern, m_lCrossFilter)
+        m_fXScore = calc_mac(m_lPattern, m_lXFilter)
+        m_sPredicted = decide_label(m_fCrossScore, m_fXScore, m_fEpsilon)
+        m_bPassed = compare_with_expected(m_sPredicted, m_sExpected)
+
+        print(f"--- {m_sPatternKey} ---")
+        print(f"Cross 점수: {m_fCrossScore}")
+        print(f"X 점수: {m_fXScore}")
+
+        if m_bPassed:
+            print(f"판정: {m_sPredicted} | expected: {m_sExpected} | PASS")
+            print()
+            m_lResults.append(make_result(
+                m_sPatternKey,
+                m_sExpected,
+                m_sPredicted,
+                True,
+                "정상 판정"
+            ))
+        else:
+            if m_sPredicted == "UNDECIDED":
+                m_sReason = "동점(UNDECIDED) 처리 규칙"
+            else:
+                m_sReason = "예상 라벨과 판정 결과 불일치"
+
+            print(f"판정: {m_sPredicted} | expected: {m_sExpected} | FAIL ({m_sReason})")
+            print()
+            m_lResults.append(make_result(
+                m_sPatternKey,
+                m_sExpected,
+                m_sPredicted,
+                False,
+                m_sReason
+            ))
+
+    print("#---------------------------------------")
+    print(f"# [3] 성능 분석 (평균/{m_iRepeat}회)")
+    print("#---------------------------------------")
+    print("크기       평균 시간(ms)    연산 횟수")
+    print("-------------------------------------")
+    for m_iSize in [3, 5, 13, 25]:
+        if (m_iSize in m_dFiltersBySize) and ("Cross" in m_dFiltersBySize[m_iSize]):
+            m_lPerformancePattern = m_dFiltersBySize[m_iSize]["Cross"]
+            m_lPerformanceFilter = m_dFiltersBySize[m_iSize]["Cross"]
+        else:
+            m_lPerformancePattern = generate_cross_matrix(m_iSize)
+            m_lPerformanceFilter = m_lPerformancePattern
+
+        m_fAverageTimeMs = measure_mac_time(
+            m_lPerformancePattern,
+            m_lPerformanceFilter,
+            m_iRepeat
+        )
+
+        if m_fAverageTimeMs is None:
+            print(f"{m_iSize}x{m_iSize}      측정 실패         {m_iSize * m_iSize}")
+        else:
+            print(f"{m_iSize}x{m_iSize}      {m_fAverageTimeMs:>10.6f}         {m_iSize * m_iSize}")
+
+    m_iTotal = len(m_lResults)
+    m_iPassed = 0
+    for result in m_lResults:
+        if result["passed"]:
+            m_iPassed += 1
+    m_iFailed = m_iTotal - m_iPassed
+
+    print()
+    print("#---------------------------------------")
+    print("# [4] 결과 요약")
+    print("#---------------------------------------")
+    print(f"총 테스트: {m_iTotal}개")
+    print(f"통과: {m_iPassed}개")
+    print(f"실패: {m_iFailed}개")
+
+    if m_iFailed > 0:
+        print("\n실패 케이스:")
+        for result in m_lResults:
+            if not result["passed"]:
+                print(f"- {result['description']}: {result['reason']}")
 
 def main() -> None:
     m_iSelectedMode = main_menu()
