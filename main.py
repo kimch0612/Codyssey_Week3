@@ -94,8 +94,13 @@ def decide_label(
         score_x, 
         epsilon = 1e-9
 ) -> str:
-    # TODO: 두 점수 비교 후 최종 판정
-    pass
+    
+    if abs(score_cross - score_x) < epsilon:
+        return "UNDECIDED"
+    elif score_cross > score_x:
+        return "Cross"
+    else:
+        return "X"
 
 def normalize_label(raw_label) -> str | None:
     # TODO: 입력 라벨을 내부 표준 라벨로 통일
