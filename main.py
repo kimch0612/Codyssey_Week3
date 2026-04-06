@@ -117,9 +117,27 @@ def normalize_label(raw_label) -> str | None:
     print("식별할 수 없는 값입니다.")
     return None
 
-def extract_size_from_pattern_key(key) -> int | None:
-    # TODO: size_5_1 같은 키에서 크기 5를 뽑는 함수
-    pass
+def extract_size_from_pattern_key(key) -> int | None:    
+    if not isinstance(key, str):
+        print("입력 값이 문자열 타입이 아닙니다.")
+        return None
+    
+    parts = key.split("_")
+    if len(parts) != 3:
+        print("키 형식이 예상과 다릅니다.")
+        return None
+    
+    if parts[0] != "size":
+        print("키 형식이 예상과 다릅니다..")
+        return None
+    
+    try:
+        size = int(parts[1])
+    except:
+        print("키에서 크기를 추출하는 과정에서 오류가 발생했습니다.")
+        return None
+
+    return size
 
 def measure_mac_time(
         pattern, 
