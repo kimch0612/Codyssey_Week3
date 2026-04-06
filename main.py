@@ -162,8 +162,11 @@ def measure_mac_time(
     return average * 1000.0
 
 def compare_with_expected(predicted, expected) -> bool:
-    # TODO: 판정 결과와 정답 비교해서 PASS/FAIL 결정
-    pass
+    if predicted is None or expected is None:
+        print("입력 값이 비었습니다.")
+        return False
+    
+    return predicted == expected
 
 def summarize_results(results) -> None:
     # TODO: 전체 테스트 요약
