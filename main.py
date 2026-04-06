@@ -169,8 +169,24 @@ def compare_with_expected(predicted, expected) -> bool:
     return predicted == expected
 
 def summarize_results(results) -> None:
-    # TODO: 전체 테스트 요약
-    pass
+    total = len(results)
+    passed = 0
+
+    for result in results:
+        if result["passed"]: passed += 1
+    failed = total - passed
+
+    print("---------------------")
+    print(f"총 테스트 케이스 수: {total}")
+    print(f"통과한 케이스 수: {passed}")
+    print(f"실패한 케이스 수: {failed}")
+
+    if failed > 0:
+        print("\n실패한 케이스:")
+        for result in results:
+            if not result["passed"]:
+                print(f"- {result['description']} (예상: {result['expected']}, 실제: {result['predicted']})")
+
     
 def main_menu() -> int:
     print("=== Mini NPU Simulator ===\n")
