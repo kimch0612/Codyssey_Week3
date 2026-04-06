@@ -81,8 +81,13 @@ def validate_matrix(matrix, size) -> bool:
     return True
 
 def calc_mac(pattern, matrix) -> float:
-    # TODO: MAC 연산 후 점수 계산
-    pass
+    score = 0.0
+
+    for i in range(len(pattern)):
+        for j in range(len(pattern[i])):
+            score += pattern[i][j] * matrix[i][j]
+
+    return score
 
 def decide_label(
         score_cross, 
