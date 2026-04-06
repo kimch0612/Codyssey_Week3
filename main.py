@@ -1,4 +1,4 @@
-import sys, json
+import sys, json, time
 
 def verify_number_input(
         m_sString: str,
@@ -143,9 +143,23 @@ def measure_mac_time(
         pattern, 
         filter_matrix, 
         repeat=10
-) -> float:
-    # TODO: MAC 연산의 평균 시간 측정
-    pass
+) -> float | None:
+    
+    if repeat <= 0:
+        print("반복 횟수가 이상합니다.")
+        return None
+
+    start = time.perf_counter()
+
+    for i in range(repeat):
+        calc_mac(pattern, filter_matrix)
+
+    end = time.perf_counter()
+
+    total = end - start
+    average = total / repeat
+
+    return average * 1000.0
 
 def compare_with_expected(predicted, expected) -> bool:
     # TODO: 판정 결과와 정답 비교해서 PASS/FAIL 결정
